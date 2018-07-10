@@ -9,6 +9,7 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
   };
 
   function init(storage) {
+    console.log('calling init');
     _this.autoDeleteBranches = storage.autoDeleteBranches;
     _this.autoMergeButtonInjecter = new AutoMergeButtonInjecter();
     _this.loginButtonInjecter = new LoginButtonInjecter();
@@ -34,8 +35,14 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
     let pathData = new LocationRecognizer(window.location.pathname).identifyAs();
 
     if (pathData.isPage('SinglePullRequest')) {
+      console.log('in single pullrequest page');
       _this.performAutoDeleteBranches();
 
+      _port = chrome.runtime.connect({ name: 'git-octomerge' });
+      _port.onMessage.addListener(function(response, port) {
+        let handler = _runtimeOnConnectHandler[response.message];
+        typeof handler === 'function' && handler(response.data, port);
+      });
       _port.postMessage({
         message: 'loadAutoMergeButtonStatus',
         data: { pathData }
@@ -82,7 +89,11 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
   _runtimeOnConnectHandler.loadAutoMergeButtonStatusCompleted = function(data) {
     let { autoMergeBy, pathData, lastUpdated, recordExists, isOwner } = data;
 
-    if(_this.isCompletenessIndicatorErrorOrSuccess()) { return false; }
+    console.log('in runtimeonconnecthandler');
+    if(_this.isCompletenessIndicatorErrorOrSuccess()) { 
+      console.log('escaping because this isCompletenessIndicatorErrorOrSuccess')
+      return false;
+    }
 
     _this.autoMergeButtonInjecter.inject(function(e) {
       if (_this.autoMergeButtonInjecter.confirmed) {
@@ -104,6 +115,7 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
               commit_message: $('#merge_message_field').val()
             }
           });
+          location.reload();
         });
       }
     });
