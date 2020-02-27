@@ -7,8 +7,8 @@ import {stream as wiredep} from 'wiredep';
 
 const $ = gulpLoadPlugins();
 
-gulp.task('extras', () => {
-  return gulp.src([
+gulp.task('extras', (cb) => {
+  gulp.src([
     'app/*.*',
     'app/_locales/**',
     '!app/scripts.babel',
@@ -19,6 +19,7 @@ gulp.task('extras', () => {
     base: 'app',
     dot: true
   }).pipe(gulp.dest('dist'));
+  cb();
 });
 
 function lint(files, options) {
@@ -35,8 +36,8 @@ gulp.task('lint', lint('app/scripts.babel/**/*.js', {
   }
 }));
 
-gulp.task('images', () => {
-  return gulp.src('app/images/**/*')
+gulp.task('images', (cb) => {
+  gulp.src('app/images/**/*')
     .pipe($.if($.if.isFile, $.cache($.imagemin({
       progressive: true,
       interlaced: true,
@@ -49,9 +50,10 @@ gulp.task('images', () => {
       this.end();
     })))
     .pipe(gulp.dest('dist/images'));
+  cb();
 });
-gulp.task('styles', () => {
-  return gulp.src('app/styles.scss/*.scss')
+gulp.task('styles', (cb) => {
+  gulp.src('app/styles.scss/*.scss')
     .pipe($.plumber())
     .pipe($.sass.sync({
       outputStyle: 'expanded',
@@ -59,10 +61,11 @@ gulp.task('styles', () => {
       includePaths: ['.']
     }).on('error', $.sass.logError))
     .pipe(gulp.dest('app/styles'));
+  cb();
 });
 
-gulp.task('html', ['styles'], () => {
-  return gulp.src('app/*.html')
+gulp.task('html', gulp.series('styles', (cb) => {
+  gulp.src('app/*.html')
     .pipe($.useref({searchPath: ['.tmp', 'app', '.']}))
     .pipe($.sourcemaps.init())
     .pipe($.if('*.js', $.uglify()))
@@ -70,10 +73,11 @@ gulp.task('html', ['styles'], () => {
     .pipe($.sourcemaps.write())
     .pipe($.if('*.html', $.htmlmin({removeComments: true, collapseWhitespace: true})))
     .pipe(gulp.dest('dist'));
-});
+  cb();
+}));
 
-gulp.task('chromeManifest', () => {
-  return gulp.src('app/manifest.json')
+gulp.task('chromeManifest', (cb) => {
+  gulp.src('app/manifest.json')
     .pipe($.chromeManifest({
       buildnumber: false,
       background: {
@@ -88,19 +92,24 @@ gulp.task('chromeManifest', () => {
   .pipe($.if('*.js', $.uglify()))
   .pipe($.if('*.js', $.sourcemaps.write('.')))
   .pipe(gulp.dest('dist'));
+  cb();
 });
 
-gulp.task('babel', () => {
-  return gulp.src('app/scripts.babel/**/*.js')
+gulp.task('babel', (cb) => {
+  gulp.src('app/scripts.babel/**/*.js')
       .pipe($.babel({
         presets: ['es2015']
       }))
       .pipe(gulp.dest('app/scripts'));
+  cb();
 });
 
-gulp.task('clean', del.bind(null, ['.tmp', 'dist']));
+gulp.task('clean', (cb) => {
+  del.bind(null, ['.tmp', 'dist']);
+  cb();
+});
 
-gulp.task('watch', ['lint', 'babel', 'html'], () => {
+gulp.task('watch', gulp.series('lint', 'babel', 'html', (cb) => {
   $.livereload.listen();
 
   gulp.watch([
@@ -114,34 +123,35 @@ gulp.task('watch', ['lint', 'babel', 'html'], () => {
   gulp.watch('app/scripts.babel/**/*.js', ['lint', 'babel']);
   gulp.watch('app/styles.scss/**/*.scss', ['styles']);
   gulp.watch('bower.json', ['wiredep']);
+  cb();
+}));
+
+gulp.task('size', (cb) => {
+  gulp.src('dist/**/*').pipe($.size({title: 'build', gzip: true}));
+  cb();
 });
 
-gulp.task('size', () => {
-  return gulp.src('dist/**/*').pipe($.size({title: 'build', gzip: true}));
-});
-
-gulp.task('wiredep', () => {
+gulp.task('wiredep', (cb) => {
   gulp.src('app/*.html')
     .pipe(wiredep({
       ignorePath: /^(\.\.\/)*\.\./
     }))
     .pipe(gulp.dest('app'));
+  cb();
 });
 
-gulp.task('package', function () {
+gulp.task('package', (cb) => {
   var manifest = require('./dist/manifest.json');
-  return gulp.src('dist/**')
+  gulp.src('dist/**')
       .pipe($.zip('octomerge-' + manifest.version + '.zip'))
       .pipe(gulp.dest('package'));
+  cb();
 });
 
-gulp.task('build', (cb) => {
-  runSequence(
-    'lint', 'babel', 'chromeManifest',
-    ['html', 'images', 'extras'],
-    'size', cb);
-});
+gulp.task('build', gulp.series('lint', 'babel', 'chromeManifest', 'html', 'images', 'extras', 'size', (cb) => {
+  cb();
+}));
 
-gulp.task('default', ['clean'], cb => {
-  runSequence('build', cb);
-});
+gulp.task('default', gulp.series('clean', 'build', cb => {
+  cb();
+}));

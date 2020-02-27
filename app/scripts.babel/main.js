@@ -4,11 +4,12 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
   let _this = {
     deleteBranchAfterMergedClass: '.post-merge-message button[type=submit]',
     mutationTarget: 'partial-pull-merging',
-    completenessIndicatorErrorOrSuccessClass: '.branch-action-item:nth(1) .completeness-indicator-error, .branch-action-item:nth(1) .completeness-indicator-success',
+    completenessIndicatorErrorOrSuccessClass: '.branch-action-item:nth-last-child(3) .completeness-indicator-error, .branch-action-item:nth-last-child(3) .completeness-indicator-success, .branch-action-item:nth-last-child(3) .completeness-indicator .failure', //'.branch-action-item:first-child .completeness-indicator-error, .branch-action-item:first-child .completeness-indicator-success',
     deleteBranchMessage: 'Octomerge detects there is an unused branch can be deleted.\n\nDo you want to auto-delete these branches for you in the future? (You can always restore the deleted branches)'
   };
 
   function init(storage) {
+    console.log('calling init');
     _this.autoDeleteBranches = storage.autoDeleteBranches;
     _this.autoMergeButtonInjecter = new AutoMergeButtonInjecter();
     _this.loginButtonInjecter = new LoginButtonInjecter();
@@ -34,8 +35,14 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
     let pathData = new LocationRecognizer(window.location.pathname).identifyAs();
 
     if (pathData.isPage('SinglePullRequest')) {
+      console.log('in single pullrequest page');
       _this.performAutoDeleteBranches();
 
+      _port = chrome.runtime.connect({ name: 'git-octomerge' });
+      _port.onMessage.addListener(function(response, port) {
+        let handler = _runtimeOnConnectHandler[response.message];
+        typeof handler === 'function' && handler(response.data, port);
+      });
       _port.postMessage({
         message: 'loadAutoMergeButtonStatus',
         data: { pathData }
@@ -82,7 +89,11 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
   _runtimeOnConnectHandler.loadAutoMergeButtonStatusCompleted = function(data) {
     let { autoMergeBy, pathData, lastUpdated, recordExists, isOwner } = data;
 
-    if(_this.isCompletenessIndicatorErrorOrSuccess()) { return false; }
+    console.log('in runtimeonconnecthandler');
+    if(_this.isCompletenessIndicatorErrorOrSuccess()) { 
+      console.log('escaping because this isCompletenessIndicatorErrorOrSuccess')
+      return false;
+    }
 
     _this.autoMergeButtonInjecter.inject(function(e) {
       if (_this.autoMergeButtonInjecter.confirmed) {
@@ -104,6 +115,7 @@ let Main = (function(window, $, moment, AutoMergeButtonInjecter, StatusMessageIn
               commit_message: $('#merge_message_field').val()
             }
           });
+          location.reload();
         });
       }
     });

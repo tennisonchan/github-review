@@ -6,6 +6,20 @@ chrome.runtime.onInstalled.addListener(details => {
   });
 });
 
+chrome.runtime.onStartup.addListener(function() {
+  console.log('onStartup called ');
+  Storage.get({ accessToken: null }).then(function(storage) {
+    new Background(new GithubAPI(storage.accessToken));
+  });
+});
+
+chrome.runtime.onSuspend.addListener(function() {
+  console.log('onSuspend called ');
+});
+
+chrome.runtime.onSuspendCanceled.addListener(function() {
+  console.log('onSuspendCanceled called ');
+});
 
 function Background(_githubAPI) {
   let _this = {};
@@ -13,6 +27,7 @@ function Background(_githubAPI) {
 
   function init() {
     chrome.runtime.onConnect.addListener(function(port) {
+      console.log('background: chrome.runtime.onConnect.addListener called with port: ' + port);
       LinearPort.addPort(port).onMessage.addListener(function(response, _port) {
         let handler = _runtimeOnConnectHandler[response.message];
         typeof handler === 'function' && handler(response.data, _port);

@@ -1,4 +1,4 @@
-let buttonTextForMerge = 'Auto-merge on Build Succeeds';
+let buttonTextForMerge = 'Auto-merge when Build Succeeds';
 let buttonTextForCancel = 'Cancel Auto-merge';
 let buttonTextForConfirm = 'Confirm Auto-merge';
 
@@ -22,12 +22,11 @@ class AutoMergeButtonInjecter {
 
   inject(clickHandler) {
     this.hideMergeMessage();
-
+    console.log('in inject van auto-merge-injecter');
     if (!this.autoButton.present) {
       this.autoButton.on({ click: clickHandler });
-      this.autoButton.append('appendTo', this.autoMergeButtonAppendTargetSelector);
     }
-
+    this.autoButton.append('appendTo', this.autoMergeButtonAppendTargetSelector);
     $(this.mergePrButtonSelector).on({
       click: () => {
         this.confirmButton.present && this.confirmButton.el.removeClass('is-show');
@@ -57,8 +56,8 @@ class AutoMergeButtonInjecter {
   injectConfirmButton(clickHandler) {
     if (!this.confirmButton.present) {
       this.confirmButton.on({ click: clickHandler });
-      this.confirmButton.append('insertBefore', this.confirmButtonAppendTargetSelector);
     }
+    this.confirmButton.append('insertBefore', this.confirmButtonAppendTargetSelector);
     this.confirmButton.el.addClass('is-show');
   }
 }

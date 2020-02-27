@@ -15,7 +15,6 @@
       "bower_components/jquery/dist/jquery.min.js",
       "scripts/env.js",
       "scripts/chromereload.js",
-      "scripts/worker.js",
       "scripts/linear-port.js",
       "scripts/github-api.js",
       "scripts/storage.js",
@@ -24,7 +23,7 @@
   },
   "permissions": [
     "*://github.com/*",
-    "*://159.203.178.124/*",
+    "*://octomerge.aceli.nl/*",
     "background",
     "storage"
   ],
@@ -39,7 +38,7 @@
     "default_title": "octomerge",
     "default_popup": "popup.html"
   },
-  "content_security_policy": "script-src 'self' https://github.com; object-src 'self'; frame-src 'self' http://159.203.178.124 https://github.com",
+  "content_security_policy": "script-src 'self' https://github.com; object-src 'self'; frame-src 'self' http://octomerge.aceli.nl https://github.com",
   "content_scripts": [
     {
       "matches": [
@@ -61,7 +60,7 @@
         "scripts/auto-merge-injecter.js",
         "scripts/main.js"
       ],
-      "run_at": "document_end",
+      "run_at": "document_idle",
       "all_frames": false
     }
   ]
